@@ -1,66 +1,49 @@
 from flask import Flask, render_template, redirect, url_for, request, session
-import requests
+import urllib.request, json
+import pandas as pd
+from dotenv import load_dotenv
 import os
-import json
-from bs4 import BeautifulSoup
-from serpapi import GoogleSearch
-import random
+
+load_dotenv()
 
 app = Flask(__name__)
 
-def get_google_search():
-    imgs = []
-    url = "https://www.googleapis.com/customsearch/v1?key=AIzaSyDJSiDFD4sqNCFt680gAOsPfDbgI8Lxq9I&cx=0740ab079404c4f48&q=namjoon&searchType=image"
-    response = requests.get(url)
-    html = response.content
-    # Parse the HTML
-    soup = BeautifulSoup(html, "html.parser")
-    my_json = soup.decode('utf8').replace("'", '"')
-    data = json.loads(my_json)
-    for img in data["items"]:
-        imgs.append(img["link"])
-    return imgs
+silverline = {"N12": "Ashburn", "N11": "Loundoun Gateway", "N10": "Dulles International Airport",
+              "N09": "Innovation Center", "N08": "Herndon", "N07":"Reston Town Center", "N06":
+              "Wiehle-Reston East", "N04": "Spring Hill", "N03": "Greensboro", "N02": "Tysons", 
+              "N01": "McLean", "K05": "East Falls Church", "K04": "Ballston-MU", "K03": "Virginia Square-GMU",
+              "K02": "Clarendon", "K01": "Court House", "C05": "Rosslyn", "C04": "Foggy Bottom-GWU", 
+              "C03": "Farragut West", "C02": "McPherson Square", "C01": "Metro Center", "D01": "Federal Triangle",
+              "D02": "Smithsonian", "D03": "L'Enfant Plaza", "D04": "Federal Center SW", "D05": "Capitol South",
+              "D06": "Eastern Market", "D07":"Potomac Avenue", "D08":"Stadium-Armory", "G01":"Benning Road",
+              "G02":"Capitol Heights", "G03": "Addison Road", "G04": "Morgan Boulevard", "G05": "Largo" }
 
-def duck_duck_go():
-    imgs = []
-    params = {
-    "engine": "duckduckgo",
-    "q": "namjoon",
-    "api_key": "280be8e2dc88b7f74ea5e1e4c2f24ec73b141a25c5a55810ae776172e141da06"
-    }
-    search = GoogleSearch(params)
-    results = search.get_dict()
-    inline_images = results["inline_images"]
-    for img in inline_images:
-        imgs.append(img["image"])
-    return imgs
+def get_train_times():
+    try:
+        url = "https://api.wmata.com/StationPrediction.svc/json/GetPrediction/All"
+        hdr ={
+        # Request headers
+        'Cache-Control': 'no-cache',
+        'api_key': os.getenv('apikey'),
+        }
+        req = urllib.request.Request(url, headers=hdr)
+        req.get_method = lambda: 'GET'
+        response = urllib.request.urlopen(req)
+        # print(response.getcode())
+        data = response.read()
+        encoding = response.info().get_content_charset('utf-8')
+        trains = json.loads(data.decode(encoding))
+        return trains
+    except Exception as e:
+        print(e)
 
-def kpopping():
-    all_imgs = []
-    url = "https://kpopping.com/kpics/gender-all/category-all/idol-RM/group-any/order"
-    response = requests.get(url)
-    html = response.content
-
-    # Parse the HTML
-    soup = BeautifulSoup(html, "html.parser")
-    imgs = soup.find_all("div", {"class": "cell"})
-    for img in imgs:
-        children = img.findChildren("img")
-        for child in children:
-            child['src'] = child['src'].replace("300", "800")
-            url = "https://kpopping.com" + child['src'].split("?")[0]
-            all_imgs.append(url)
-    return all_imgs
-
+def process_trains(trains):
+    trains = pd.DataFrame(trains["Trains"])
+    silver = trains[(trains['LocationCode'].isin(silverline.keys())) & (trains["Line"] == "SV") & ((trains["Min"] == "ARR") | (trains["Min"] == "BRD")) ]
+    SLdict = silver['LocationCode'].value_counts().to_dict()
+    return SLdict 
 
 @app.route('/')
 def login():
-    all_imgs = []
-    google = get_google_search()
-    ddg = duck_duck_go()
-    kpop = kpopping()
-    all_imgs.extend(google)
-    all_imgs.extend(ddg)
-    all_imgs.extend(kpop)
-    index = random.randint(0, len(all_imgs)-1)
-    return render_template('index.html', namjoon=all_imgs[index])
+    trains = process_trains(get_train_times())
+    return render_template('index.html', stations=silverline, trains=trains)

@@ -1,11 +1,23 @@
 <html>
   <head>
-
+    <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/styles.css') }}">
+    <meta http-equiv="refresh" content="60">
   </head>
   <body>
-    <h1>Hi Namjoon</h1>
+    <h1>Silver Line</h1>
 
-  <img src={{namjoon}} />
+    <table>
+      
+      {% for station in stations %}
+      <tr>
+          {% if station in trains %}
+              <td>{{ stations[station] }}<img src="/static/images/train.jpg" alt="Train" height="50" width="50"></td>
+              {% else %}
+              <td>{{ stations[station] }}</td>
+          {% endif %}
+      </tr>
+      {% endfor %}
+      </table>
 
   </body>
 
