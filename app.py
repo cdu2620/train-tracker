@@ -44,6 +44,6 @@ def process_trains(trains):
     return SLdict 
 
 @app.route('/')
-def login():
+def see_trains():
     trains = process_trains(get_train_times())
     return render_template('index.html', stations=silverline, trains=trains)
