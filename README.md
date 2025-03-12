@@ -1,1 +1,1 @@
-random namjoon image generator :D images sourced from google images, duck duck go images, and kpopping.com
+lists the trains at each silver line station. updates every minute
