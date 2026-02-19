@@ -40,10 +40,14 @@ def get_train_times():
 def process_trains(trains):
     trains = pd.DataFrame(trains["Trains"])
     silver = trains[(trains['LocationCode'].isin(silverline.keys())) & (trains["Line"] == "SV") & ((trains["Min"] == "ARR") | (trains["Min"] == "BRD")) ]
-    SLdict = silver['LocationCode'].value_counts().to_dict()
-    return SLdict 
+    # SLdict = silver['LocationCode'].value_counts().to_dict()
+    SL = silver.value_counts(subset=['LocationCode', 'Destination']).reset_index().groupby("LocationCode").agg({"Destination": "unique"}).reset_index().set_index("LocationCode")
+    SL['Destination'] = SL['Destination'].apply(lambda x: list(x) if hasattr(x, '__iter__') else [x])
+    SLdict = SL['Destination'].to_dict()
+    return SLdict
+
 
 @app.route('/')
 def see_trains():
     trains = process_trains(get_train_times())
-    return render_template('index.html', stations=silverline, trains=trains)
+    return render_template('index.html', stations=silverline, trains=trains, end="Ashburn", start="Largo")

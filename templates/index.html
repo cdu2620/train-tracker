@@ -11,7 +11,13 @@
       {% for station in stations %}
       <tr>
           {% if station in trains %}
-              <td>{{ stations[station] }}<img src="/static/images/train.jpg" alt="Train" height="50" width="50"></td>
+              <td>{{ stations[station] }}<img src="/static/images/train.jpg" alt="Train" height="50" width="50">
+                {% if end in trains[station] %}
+                ⬆️
+                {% endif %}
+                {% if start in trains[station] %}
+                ⬇️
+                {% endif %}
               {% else %}
               <td>{{ stations[station] }}</td>
           {% endif %}
